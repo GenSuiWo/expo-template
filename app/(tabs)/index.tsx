@@ -1,98 +1,174 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useAuth } from '@/core/auth';
+import { usePermission } from '@/core/permission';
+import { useTranslation } from '@/core/i18n';
+import { useTheme } from '@/providers/theme-provider';
+import { useUserStore, useAppStore } from '@/stores';
+import { Button } from '@/components/common';
+import { logger } from '@/core/logger';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { user, isAuthenticated } = useAuth();
+  const { hasPermission } = usePermission();
+  const { t, language, changeLanguage } = useTranslation();
+  const { isDark, toggleTheme } = useTheme();
+  const { isOnline } = useUserStore();
+  const { isConnected, appVersion } = useAppStore();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const handleLanguageToggle = () => {
+    const newLang = language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    changeLanguage(newLang);
+    logger.info(`Language changed to ${newLang}`, undefined, 'HomeScreen');
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>🎉 {t('home.welcome')}</Text>
+        <Text style={styles.subtitle}>企业级 Expo 框架示例</Text>
+      </View>
+
+      {/* 认证状态 */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🔐 认证状态</Text>
+        <Text style={styles.text}>
+          登录状态: {isAuthenticated ? '✅ 已登录' : '❌ 未登录'}
+        </Text>
+        {user && (
+          <Text style={styles.text}>用户: {user.username || 'N/A'}</Text>
+        )}
+      </View>
+
+      {/* 应用状态 */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>📱 应用状态</Text>
+        <Text style={styles.text}>主题: {isDark ? '🌙 深色' : '☀️ 浅色'}</Text>
+        <Text style={styles.text}>语言: {language}</Text>
+        <Text style={styles.text}>版本: {appVersion}</Text>
+        <Text style={styles.text}>
+          网络: {isConnected ? '🟢 已连接' : '🔴 断开'}
+        </Text>
+        <Text style={styles.text}>
+          用户状态: {isOnline ? '🟢 在线' : '🔴 离线'}
+        </Text>
+      </View>
+
+      {/* 功能测试 */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🛠️ 功能测试</Text>
+        
+        <Button
+          title={`切换主题 (当前: ${isDark ? '深色' : '浅色'})`}
+          onPress={toggleTheme}
+          variant="primary"
+          style={styles.button}
+        />
+
+        <Button
+          title={`切换语言 (${language})`}
+          onPress={handleLanguageToggle}
+          variant="secondary"
+          style={styles.button}
+        />
+
+        <Button
+          title="测试日志"
+          onPress={() => {
+            logger.debug('这是 DEBUG 日志');
+            logger.info('这是 INFO 日志');
+            logger.warn('这是 WARN 日志');
+            logger.error('这是 ERROR 日志');
+          }}
+          variant="outline"
+          style={styles.button}
+        />
+      </View>
+
+      {/* 框架特性 */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>✨ 框架特性</Text>
+        <Text style={styles.feature}>✅ 完整的认证系统</Text>
+        <Text style={styles.feature}>✅ 权限控制 (RBAC)</Text>
+        <Text style={styles.feature}>✅ 国际化 (i18n)</Text>
+        <Text style={styles.feature}>✅ 主题切换</Text>
+        <Text style={styles.feature}>✅ 状态管理 (Zustand)</Text>
+        <Text style={styles.feature}>✅ 网络请求层</Text>
+        <Text style={styles.feature}>✅ 日志系统</Text>
+        <Text style={styles.feature}>✅ 安全存储</Text>
+        <Text style={styles.feature}>✅ 路由守卫</Text>
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          🚀 企业级 Expo 框架 v{appVersion}
+        </Text>
+        <Text style={styles.footerText}>
+          框架搭建完成 ✨
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
   },
-  stepContainer: {
-    gap: 8,
+  header: {
+    padding: 24,
+    paddingTop: 40,
+    backgroundColor: '#007AFF',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  subtitle: {
+    fontSize: 16,
+    color: '#E6F2FF',
+  },
+  card: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#111827',
+  },
+  text: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginBottom: 8,
+  },
+  feature: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginBottom: 6,
+  },
+  button: {
+    marginTop: 8,
+  },
+  footer: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 4,
   },
 });
